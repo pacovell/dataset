@@ -73,6 +73,8 @@ module Dataset
       require 'dataset/extensions/test_unit'
     elsif test_context.name =~ /ExampleGroup\Z/
       require 'dataset/extensions/rspec'
+    elsif test_context.name =~ /Cucumber/
+      require 'dataset/extensions/cucumber'      
     else
       raise "I don't understand your test framework"
     end
