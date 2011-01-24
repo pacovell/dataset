@@ -1,7 +1,6 @@
 module Dataset
   module Extensions # :nodoc:
-    
-    module RSpecExampleGroup # :nodoc:
+    module RSpec # :nodoc:
       def dataset(*datasets, &block)
         add_dataset(*datasets, &block)
         
@@ -18,4 +17,12 @@ module Dataset
     
   end
 end
-Spec::Example::ExampleGroup.extend Dataset::Extensions::RSpecExampleGroup
+
+RSpec.configure do |config|
+  config.extend Dataset::ContextClassMethods
+  config.extend Dataset::Extensions::RSpec
+  config.add_setting :datasets_directory, :default => Rails.root + 'spec/datasets'
+  config.add_setting :datasets_dump_path, :default => Rails.root + 'tmp/dataset'
+end
+
+Dataset::Resolver.default = nil

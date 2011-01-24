@@ -1,3 +1,6 @@
+require 'active_support'
+require 'active_record'
+
 require 'dataset/version'
 require 'dataset/instance_methods'
 require 'dataset/base'
@@ -10,6 +13,7 @@ require 'dataset/load'
 require 'dataset/resolver'
 require 'dataset/session'
 require 'dataset/session_binding'
+require 'dataset/record/heirarchy'
 require 'dataset/record/meta'
 require 'dataset/record/fixture'
 require 'dataset/record/model'
@@ -61,27 +65,13 @@ require 'dataset/record/model'
 #    require 'dataset'
 #    class Test::Unit::TestCase
 #      include Dataset
-#      datasets_directory "#{RAILS_ROOT}/test/datasets"
+#      datasets_directory "#{Rails.root}/test/datasets"
 #    end
 #
 # Note that should you desire your Dataset::Base subclasses be
 # auto-discovered, you can set the _datasets_directory_.
 #
 module Dataset
-  def self.included(test_context) # :nodoc:
-    if test_context.name =~ /TestCase\Z/
-      require 'dataset/extensions/test_unit'
-    elsif test_context.name =~ /ExampleGroup\Z/
-      require 'dataset/extensions/rspec'
-    elsif test_context.name =~ /Cucumber/
-      require 'dataset/extensions/cucumber'      
-    else
-      raise "I don't understand your test framework"
-    end
-    
-    test_context.extend ContextClassMethods
-  end
-  
   # Methods that are added to the class that Dataset is included in (the test
   # context class).
   #
@@ -93,19 +83,15 @@ module Dataset
       end
     end
     
-    mattr_accessor :datasets_database_dump_path
-    self.datasets_database_dump_path = File.expand_path(RAILS_ROOT + '/tmp/dataset') if defined?(RAILS_ROOT)
-    
-    # Replaces the default Dataset::Resolver with one that will look for
-    # dataset class definitions in the specified directory. Captures of the
-    # database will be stored in a subdirectory 'tmp' (see
-    # Dataset::Database::Base).
-    def datasets_directory(path)
-      Dataset::Resolver.default = Dataset::DirectoryResolver.new(path)
-      Dataset::ContextClassMethods.datasets_database_dump_path = File.join(path, '/tmp/dataset')
+    # Replaces the default Dataset::Resolver with one that will look for dataset
+    # class definitions in the specified directory. Captures of the database
+    # will be stored in a subdirectory 'tmp' (see Dataset::Database::Base).
+    def set_dataset_resolver
+      Dataset::Resolver.default ||= Dataset::DirectoryResolver.new(RSpec.configuration.datasets_directory)
     end
     
     def add_dataset(*datasets, &block) # :nodoc:
+      set_dataset_resolver
       dataset_session = dataset_session_in_hierarchy
       datasets.each { |dataset| dataset_session.add_dataset(self, dataset) }
       dataset_session.add_dataset(self, Class.new(Dataset::Block) {
@@ -115,9 +101,9 @@ module Dataset
     
     def dataset_session_in_hierarchy # :nodoc:
       self.dataset_session ||= begin
-        database_spec = ActiveRecord::Base.configurations['test'].with_indifferent_access
+        database_spec = ActiveRecord::Base.configurations[Rails.env].with_indifferent_access
         database_class = Dataset::Database.const_get(database_spec[:adapter].classify)
-        database = database_class.new(database_spec, Dataset::ContextClassMethods.datasets_database_dump_path)
+        database = database_class.new(database_spec, RSpec.configuration.datasets_dump_path)
         Dataset::Session.new(database)
       end
     end

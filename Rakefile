@@ -1,27 +1,11 @@
-$:.unshift(File.join(File.dirname(__FILE__), 'lib'))
-
+# require File.join(File.dirname(__FILE__), 'plugit/descriptor')
 require 'rubygems'
-require 'spec/rake/spectask'
+require 'rspec/core/rake_task'
 
 task :default => :spec
 
 desc "Run all specs"
-Spec::Rake::SpecTask.new do |t|
-  t.spec_files = FileList['spec/**/*_spec.rb']
-  t.spec_opts = ['--options', 'spec/spec.opts']
-end
-
-begin
-  require 'jeweler'
-  Jeweler::Tasks.new do |s|
-    s.name = 'dataset'
-    s.summary = 'A simple API for creating and finding sets of data in your database, built on ActiveRecord.'
-    s.email = 'adam@thewilliams.ws'
-    s.files = FileList["[A-Z]*", "{lib,tasks}/**/*", "plugit/descriptor.rb"].exclude("tmp")
-    s.homepage = "http://github.com/aiwilliams/dataset"
-    s.description = s.summary
-    s.authors = ['Adam Williams']
-  end
-rescue LoadError
-  puts "Jeweler not available. Install it with: sudo gem install technicalpickles-jeweler -s http://gems.github.com"
+RSpec::Core::RakeTask.new do |t|
+  t.pattern = 'spec/**/*_spec.rb'
+  t.rspec_opts = ["-c", "--backtrace", "--format progress"]
 end
