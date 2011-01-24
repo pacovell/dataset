@@ -72,6 +72,20 @@ require 'dataset/record/model'
 # auto-discovered, you can set the _datasets_directory_.
 #
 module Dataset
+  def self.included(test_context) # :nodoc:
+    if test_context.name =~ /World\Z/
+      require 'dataset/extensions/cucumber'
+    elsif test_context.name =~ /TestCase\Z/
+      require 'dataset/extensions/test_unit'
+    elsif test_context.name =~ /ExampleGroup\Z/
+      require 'dataset/extensions/rspec'
+    else
+      raise "I don't understand your test framework"
+    end
+    
+    test_context.extend ContextClassMethods
+  end
+  
   # Methods that are added to the class that Dataset is included in (the test
   # context class).
   #
